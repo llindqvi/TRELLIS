@@ -1,5 +1,5 @@
 # Read Arguments
-TEMP=`getopt -o h --long help,new-env,basic,xformers,flash-attn,diffoctreerast,vox2seq,spconv,mipgaussian,kaolin,nvdiffrast,demo -n 'setup.sh' -- "$@"`
+TEMP=`getopt -o h --long help,new-env,basic,xformers,flash-attn,diffoctreerast,vox2seq,spconv,mipgaussian,kaolin,nvdiffrast,demo,platform-cuda,platform-hip -n 'setup.sh' -- "$@"`
 
 eval set -- "$TEMP"
 
@@ -17,6 +17,8 @@ MIPGAUSSIAN=false
 KAOLIN=false
 NVDIFFRAST=false
 DEMO=false
+PLATFORM_CUDA=false
+PLATFORM_HIP=false
 
 if [ "$#" -eq 1 ] ; then
     HELP=true
@@ -36,6 +38,8 @@ while true ; do
         --kaolin) KAOLIN=true ; shift ;;
         --nvdiffrast) NVDIFFRAST=true ; shift ;;
         --demo) DEMO=true ; shift ;;
+        --platform-cuda) PLATFORM_CUDA=true ; shift ;;
+        --platform-hip) PLATFORM_HIP=true ; shift ;;
         --) shift ; break ;;
         *) ERROR=true ; break ;;
     esac
@@ -61,6 +65,8 @@ if [ "$HELP" = true ] ; then
     echo "  --kaolin                Install kaolin"
     echo "  --nvdiffrast            Install nvdiffrast"
     echo "  --demo                  Install all dependencies for demo"
+    echo "  --platform-cuda         Force select cuda as platform"
+    echo "  --platform-hip          Force select hip as platform"
     return
 fi
 
@@ -73,7 +79,14 @@ fi
 # Get system information
 WORKDIR=$(pwd)
 PYTORCH_VERSION=$(python -c "import torch; print(torch.__version__)")
-PLATFORM=$(python -c "import torch; print(('cuda' if torch.version.cuda else ('hip' if torch.version.hip else 'unknown')) if torch.cuda.is_available() else 'cpu')")
+if [ $PLATFORM_CUDA = true ] ; then
+    PLATFORM=cuda
+elif [ $PLATFORM_HIP = true ] ; then
+    PLATFORM=hip
+else
+    PLATFORM=$(python -c "import torch; print(('cuda' if torch.version.cuda else ('hip' if torch.version.hip else 'unknown')) if torch.cuda.is_available() else 'cpu')")
+fi
+echo "[SYSTEM] Platform: $PLATFORM"
 case $PLATFORM in
     cuda)
         CUDA_VERSION=$(python -c "import torch; print(torch.version.cuda)")
